@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"strconv"
 	"sync/atomic"
 )
 
-func traverseDir(hashes, duplicates map[string]string, dupeSize *int64, entries []os.FileInfo, directory string) {
+func traverseDir(hashes, duplicates map[string]string, dupeSize *int64, entries []os.FileInfo, directory string) error {
 	for _, entry := range entries {
 		fullpath := (path.Join(directory, entry.Name()))
 
@@ -24,24 +25,30 @@ func traverseDir(hashes, duplicates map[string]string, dupeSize *int64, entries 
 		if entry.IsDir() {
 			dirFiles, err := ioutil.ReadDir(fullpath)
 			if err != nil {
-				panic(err)
+				log.Println(err)
+				return err
 			}
 			traverseDir(hashes, duplicates, dupeSize, dirFiles, fullpath)
 			continue
 		}
 		file, err := ioutil.ReadFile(fullpath)
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			return err
 		}
-		saveHash(file, fullpath, hashes, duplicates, dupeSize, entry)
+		err = saveHash(file, fullpath, hashes, duplicates, dupeSize, entry)
+		log.Println(err)
+		return err
 
 	}
+	return nil
 }
 
-func saveHash(file []byte, fullpath string, hashes, duplicates map[string]string, dupeSize *int64, entry fs.FileInfo) {
+func saveHash(file []byte, fullpath string, hashes, duplicates map[string]string, dupeSize *int64, entry fs.FileInfo) error {
 	hash := sha1.New()
 	if _, err := hash.Write(file); err != nil {
-		panic(err)
+		log.Println(err)
+		return err
 	}
 	hashSum := hash.Sum(nil)
 	hashString := fmt.Sprintf("%x", hashSum)
@@ -51,6 +58,7 @@ func saveHash(file []byte, fullpath string, hashes, duplicates map[string]string
 	} else {
 		hashes[hashString] = fullpath
 	}
+	return nil
 }
 
 func toReadableSize(nbytes int64) string {
@@ -72,6 +80,12 @@ func toReadableSize(nbytes int64) string {
 }
 
 func main() {
+	defer func() {
+		r := recover()
+		if r != nil {
+			log.Println(r)
+		}
+	}()
 	var err error
 	dir := flag.String("path", "", "the path to traverse searching for duplicates")
 	flag.Parse()

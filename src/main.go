@@ -1,9 +1,11 @@
 package main
 
 import (
+	"clean-code-workshop/src/constants"
 	"crypto/sha1"
 	"flag"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path"
@@ -31,36 +33,42 @@ func traverseDir(hashes, duplicates map[string]string, dupeSize *int64, entries 
 		if err != nil {
 			panic(err)
 		}
-		hash := sha1.New()
-		if _, err := hash.Write(file); err != nil {
-			panic(err)
-		}
-		hashSum := hash.Sum(nil)
-		hashString := fmt.Sprintf("%x", hashSum)
-		if hashEntry, ok := hashes[hashString]; ok {
-			duplicates[hashEntry] = fullpath
-			atomic.AddInt64(dupeSize, entry.Size())
-		} else {
-			hashes[hashString] = fullpath
-		}
+		saveHash(file, fullpath, hashes, duplicates, dupeSize, entry)
+
+	}
+}
+
+func saveHash(file []byte, fullpath string, hashes, duplicates map[string]string, dupeSize *int64, entry fs.FileInfo) {
+	hash := sha1.New()
+	if _, err := hash.Write(file); err != nil {
+		panic(err)
+	}
+	hashSum := hash.Sum(nil)
+	hashString := fmt.Sprintf("%x", hashSum)
+	if hashEntry, ok := hashes[hashString]; ok {
+		duplicates[hashEntry] = fullpath
+		atomic.AddInt64(dupeSize, entry.Size())
+	} else {
+		hashes[hashString] = fullpath
 	}
 }
 
 func toReadableSize(nbytes int64) string {
-	if nbytes > 1000*1000*1000*1000 {
-		return strconv.FormatInt(nbytes/(1000*1000*1000*1000), 10) + " TB"
+
+	if nbytes > constants.TB {
+		return strconv.FormatInt(nbytes/(1000*1000*1000*1000), 10) + constants.TBString
 	}
-	if nbytes > 1000*1000*1000 {
-		return strconv.FormatInt(nbytes/(1000*1000*1000), 10) + " GB"
+	if nbytes > constants.GB {
+		return strconv.FormatInt(nbytes/(1000*1000*1000), 10) + constants.GBString
 	}
-	if nbytes > 1000*1000 {
-		return strconv.FormatInt(nbytes/(1000*1000), 10) + " MB"
+	if nbytes > constants.MB {
+		return strconv.FormatInt(nbytes/(1000*1000), 10) + constants.MBString
 	}
-	if nbytes >= 1000 {
-		return strconv.FormatInt(nbytes/1000, 10) + " KB"
+	if nbytes >= constants.KB {
+		return strconv.FormatInt(nbytes/1000, 10) + constants.KBString
 	}
 
-	return strconv.FormatInt(nbytes, 10) + " B"
+	return strconv.FormatInt(nbytes, 10) + constants.ByteString
 }
 
 func main() {

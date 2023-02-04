@@ -1,6 +1,8 @@
 package main
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -19,6 +21,39 @@ func TestToReadableSize(t *testing.T) {
 	}
 }
 
+func TestTraverseDir(t *testing.T) {
+	var (
+		hashes     map[string]string
+		duplicates map[string]string
+		dupeSize   *int64
+		entries    []os.FileInfo
+		directory  string
+	)
+
+	hashes = make(map[string]string)
+	duplicates = make(map[string]string)
+	// dir := flag.String("path", "/home/deepesh/Juno/src/Test/clean-code-workshop/duplicates_files_directory", "the path to traverse searching for duplicates")
+	// flag.Parse()
+
+	entries, err := ioutil.ReadDir("./")
+	if err != nil {
+		panic(err)
+	}
+
+	var i int64 = 10
+	dupeSize = &i
+	t.Run("Success", func(t *testing.T) {
+
+		traverseDir(hashes, duplicates, dupeSize, entries, directory)
+
+	})
+	t.Run("Failure", func(t *testing.T) {
+
+		traverseDir(hashes, duplicates, dupeSize, entries, directory)
+
+	})
+}
+
 // Approach-2 with go testing library with multiple multiple tests scenerios(Table Driven Test)
 type toReadableSizeTest struct {
 	nbytes   int
@@ -26,7 +61,7 @@ type toReadableSizeTest struct {
 }
 
 var toReadableSizeTests = []toReadableSizeTest{
-	{1000, "1000 B"},
+	{1000, "1 KB"},
 	{1000 * 1000, "1000 KB"},
 	{1000 * 1000 * 1000, "1000 MB"},
 	{1000 * 1000 * 1000 * 1000, "1000 GB"},
@@ -49,6 +84,7 @@ func TestToReadableSizeMultipleApproachTwo(t *testing.T) {
 		expected string
 	}{
 		{"byte_return", 125, "125 B"},
+		{"byte_1000_return", 1000, "1 KB"},
 		{"kilobyte_return", 1010, "1 KB"},
 		{"megabyte_return", 1988909, "1 MB"},
 		{"gigabyte_return", 29121988909, "29 GB"},

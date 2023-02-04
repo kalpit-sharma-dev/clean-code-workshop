@@ -56,9 +56,10 @@ func toReadableSize(nbytes int64) string {
 	if nbytes > 1000*1000 {
 		return strconv.FormatInt(nbytes/(1000*1000), 10) + " MB"
 	}
-	if nbytes > 1000 {
+	if nbytes >= 1000 {
 		return strconv.FormatInt(nbytes/1000, 10) + " KB"
 	}
+
 	return strconv.FormatInt(nbytes, 10) + " B"
 }
 
